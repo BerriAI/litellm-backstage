@@ -47,8 +47,8 @@ type Step = 'login' | 'options' | 'final';
 
 export const LitellmPage = () => {
   const config = useApi(configApiRef);
-  // For now, hardcoding baseUrl; later, you can retrieve it from config
-  const baseUrl = "http://localhost:4000";
+  // Initialize with a default URL but allow user to change it
+  const [baseUrl, setBaseUrl] = useState<string>("http://localhost:4000");
 
   // Component state
   const [step, setStep] = useState<Step>('login');
@@ -69,6 +69,13 @@ export const LitellmPage = () => {
       setErrorMessage('Please enter both username and password.');
       return;
     }
+    
+    // Validate baseUrl format
+    if (!baseUrl || !baseUrl.startsWith('http')) {
+      setErrorMessage('Please enter a valid URL (starting with http:// or https://).');
+      return;
+    }
+    
     try {
       const response = await fetch(`${baseUrl}/login`, {
         method: 'POST',
@@ -85,11 +92,25 @@ export const LitellmPage = () => {
         // Transition to options step.
         setStep('options');
       } else {
-        setErrorMessage(`Login failed: ${response.status} ${response.statusText}`);
+        let errorMessage = `Login failed: ${response.status} ${response.statusText}`
+
+        if (response.statusText?.includes('NetworkError')) {
+          errorMessage += ' - Unable to connect - Please check if the URL is correct and the server is running';
+        } else if (response.statusText?.includes('Unauthorized')) {
+          errorMessage += ' - Invalid username or password';
+        }
+        setErrorMessage(errorMessage);
       }
     } catch (error: any) {
-      console.error(error);
-      setErrorMessage(`Login error: ${error.message}`);
+        let errorMessage = `Login failed: ${error.message}`
+        
+        if (error.message?.includes('NetworkError')) {
+          errorMessage += ' - Unable to connect - Please check if the URL is correct and the server is running';
+        } else if (error.message?.includes('Unauthorized')) {
+          errorMessage += ' - Invalid username or password';
+        }
+        console.error(error);
+        setErrorMessage(errorMessage);
     }
   };
 
@@ -151,9 +172,9 @@ export const LitellmPage = () => {
       if (!response.ok) {
         const status = response.status;
         if (status === 400) {
-          throw new Error(`Failed to generate key: ${status} Bad Request. This might be due to a duplicate key name. Please try a different name.`);
+          throw new Error(`Failed to generate key: ${status} Bad Request - This might be due to a duplicate key name. Please try a different name.`);
         } else if (status === 500) {
-          throw new Error(`Failed to generate key: ${status} Internal Server Error. This might be because the key profile feature is premium. Try with 'None' profile option.`);
+          throw new Error(`Failed to generate key: ${status} Internal Server Error - This might be because the key profile feature is premium. Try with 'None' profile option.`);
         } else {
           throw new Error(`Failed to generate key: ${status} ${response.statusText}`);
         }
@@ -173,13 +194,13 @@ export const LitellmPage = () => {
   };
 
 
-  // Code samples with the generated API key substituted in.
+  // Code samples with the generated API key and baseUrl substituted in.
   const codeSamples = {
     pythonOpenAI: `
 import openai
 client = openai.OpenAI(
     api_key="${generatedKey}",  # YOUR_API_KEY
-    base_url="http://0.0.0.0:4000"  # set openai_api_base to the LiteLLM Proxy
+    base_url="${baseUrl}"  # set openai_api_base to the LiteLLM Proxy
 )
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
@@ -193,7 +214,7 @@ from langchain.prompts.chat import ChatPromptTemplate, HumanMessagePromptTemplat
 from langchain.schema import HumanMessage, SystemMessage
 
 chat = ChatOpenAI(
-    openai_api_base="http://0.0.0.0:4000",  # set openai_api_base to the LiteLLM Proxy
+    openai_api_base="${baseUrl}",  # set openai_api_base to the LiteLLM Proxy
     api_key="${generatedKey}",
     model="gpt-3.5-turbo",
     temperature=0.1
@@ -209,7 +230,7 @@ import { ChatOpenAI } from "@langchain/openai";
 
 const chat = new ChatOpenAI({
   apiKey: "${generatedKey}",
-  configuration: { baseURL: "http://0.0.0.0:4000" }, // set openai_api_base to the LiteLLM Proxy
+  configuration: { baseURL: "${baseUrl}" }, // set openai_api_base to the LiteLLM Proxy
   model: "gpt-3.5-turbo",
   temperature: 0.1,
 });
@@ -226,7 +247,7 @@ async function main() {
 main();
     `.trim(),
     curl: `
-curl --location 'http://0.0.0.0:4000/chat/completions' \\
+curl --location '${baseUrl}/chat/completions' \\
 --header 'Content-Type: application/json' \\
 --header 'Authorization: Bearer ${generatedKey}' \\
 --data '{
@@ -238,16 +259,21 @@ curl --location 'http://0.0.0.0:4000/chat/completions' \\
     `.trim(),
   };
 
-  // Render different steps
-  if (!baseUrl) {
-    return <div style={{ color: 'red' }}>LiteLLM API base URL is not configured. Please check your settings.</div>;
-  }
-
   return (
     <div style={{ maxWidth: 600, padding: 16 }}>
       <Typography variant="h5">LiteLLM Key Manager</Typography>
       {step === 'login' && (
         <div style={{ marginTop: 16 }}>
+          <TextField 
+            label="LiteLLM API URL" 
+            variant="outlined" 
+            fullWidth 
+            value={baseUrl} 
+            onChange={e => setBaseUrl(e.target.value)} 
+            margin="normal"
+            placeholder="http://localhost:4000"
+            helperText="Enter the base URL of your LiteLLM API server"
+          />
           <TextField 
             label="Username" 
             variant="outlined" 
