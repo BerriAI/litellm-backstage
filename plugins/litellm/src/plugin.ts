@@ -16,7 +16,7 @@ export const LitellmPage = litellmPlugin.provide(
   createRoutableExtension({
     name: 'LitellmPage',
     component: () =>
-      import('./components/ExampleComponent').then(m => m.ExampleComponent),
+      import('./components/LitellmPage/LitellmPage.tsx').then(m => m.LitellmPage),
     mountPoint: rootRouteRef,
   }),
 );
