@@ -1,4 +1,3 @@
-
 export interface Config {
   app: {
     /**
@@ -9,11 +8,12 @@ export interface Config {
     baseUrl: string;
 
     /**
-     * Some custom complex type
-     * NOTE: Visibility applies recursively downward
-     * This is particularly useful for complex types like durations
-     * @visibility frontend
+     * LiteLLM plugin configuration
+     * @deepVisibility frontend
      */
-    customSchedule: string;
+    litellm: {
+      apiKey: string;
+      baseUrl: string;
+    };
   };
 }

@@ -45,14 +45,18 @@ function decodeJwt(token: string): any {
 
 type Step = 'login' | 'options' | 'final';
 
+type LitellmConfig = {
+  baseUrl: string;
+  apiKey: string;
+}
+
 export const LitellmPage = () => { 
   const config = useApi(configApiRef);
-  console.log('app.title', config.getOptionalString('app.title'));
-  console.log('app.customSchedule', config.getOptionalString('app.customSchedule'));
-  console.log('litellm config', config.keys());
-  console.log('litellm config app', config.get('app'));
-  // Initialize with a default URL but allow user to change it
-  const [baseUrl, setBaseUrl] = useState<string>("http://localhost:4000");
+  const litellmConfig: LitellmConfig = config.get('app.litellm');
+  if (!litellmConfig || !litellmConfig.baseUrl || !litellmConfig.apiKey) {
+    throw new Error('LiteLLM config is not set');
+  }
+  const baseUrl = litellmConfig.baseUrl;
 
   // Component state
   const [step, setStep] = useState<Step>('login');
@@ -60,7 +64,6 @@ export const LitellmPage = () => {
   const [password, setPassword] = useState<string>('');
   const [loggedIn, setLoggedIn] = useState<boolean>(false);
   const [keyAlias, setKeyAlias] = useState<string>('');
-  // Update the default profile to "none" instead of "dev"
   const [profile, setProfile] = useState<'none' | 'dev' | 'prod'>('none');
   const [generatedKey, setGeneratedKey] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -268,16 +271,6 @@ curl --location '${baseUrl}/chat/completions' \\
       <Typography variant="h5">LiteLLM Key Manager</Typography>
       {step === 'login' && (
         <div style={{ marginTop: 16 }}>
-          <TextField 
-            label="LiteLLM API URL" 
-            variant="outlined" 
-            fullWidth 
-            value={baseUrl} 
-            onChange={e => setBaseUrl(e.target.value)} 
-            margin="normal"
-            placeholder="http://localhost:4000"
-            helperText="Enter the base URL of your LiteLLM API server"
-          />
           <TextField 
             label="Username" 
             variant="outlined" 
