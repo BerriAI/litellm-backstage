@@ -19,7 +19,7 @@ https://youtu.be/V9RXk5SJcCo
 
 From your Backstage root directory:
 ```bash
-yarn add --cwd packages/app @internal/plugin-litellm
+yarn add --cwd packages/app @cakecrusher/plugin-litellm
 ```
 
 ## Configuration
@@ -40,7 +40,7 @@ app:
 Add the LiteLLM page to your Backstage application by modifying your `packages/app/src/App.tsx` file:
 
 ```tsx
-import { LitellmPage } from '@internal/plugin-litellm';
+import { LitellmPage } from '@cakecrusher/plugin-litellm';
 
 // Inside your App component's route definitions:
 <Route path="/litellm" element={<LitellmPage />} />
