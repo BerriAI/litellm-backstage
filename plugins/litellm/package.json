@@ -1,8 +1,9 @@
 {
-  "name": "@backstage/plugin-litellm",
-  "version": "0.1.0",
-  "license": "Apache-2.0",
-  "private": true,
+  "name": "@cakecrusher/plugin-litellm",
+  "description": "Integrates LiteLLM's key management system into Backstage, enabling teams to generate, track, and manage API keys for LLM services with budget controls and usage monitoring in a centralized interface.",
+  "version": "0.1.1",
+  "license": "MIT",
+  "private": false,
   "main": "src/index.ts",
   "types": "src/index.ts",
   "publishConfig": {
@@ -11,7 +12,11 @@
     "types": "dist/index.d.ts"
   },
   "backstage": {
-    "role": "frontend-plugin"
+    "role": "frontend-plugin",
+    "pluginId": "litellm",
+    "pluginPackages": [
+      "@internal/plugin-litellm"
+    ]
   },
   "sideEffects": false,
   "scripts": {

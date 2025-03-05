@@ -219,6 +219,29 @@ curl --location '${baseUrl}/chat/completions' \\
     `.trim(),
   };
 
+  const getCodeSampleForTab = (index: number): string => {
+    switch(index) {
+      case 0: return codeSamples.pythonOpenAI;
+      case 1: return codeSamples.pythonLangchain;
+      case 2: return codeSamples.jsLangchain;
+      default: return codeSamples.curl;
+    }
+  };
+
+  const renderMenuItems = () => {
+    if (isLoadingBudgets) {
+      return <MenuItem value="">Loading budgets...</MenuItem>;
+    }
+    
+    if (profiles.length > 0) {
+      return profiles.map((profile: string) => (
+        <MenuItem key={profile} value={profile}>{profile}</MenuItem>
+      ));
+    }
+    
+    return <MenuItem value="">No budgets available</MenuItem>;
+  };
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 16 }}>
       <Typography variant="h4" gutterBottom>LiteLLM Key Manager</Typography>
@@ -256,17 +279,7 @@ curl --location '${baseUrl}/chat/completions' \\
               label={`Profile (budget) ${budgetRequired ? '(Required)' : '(Optional)'}`}
               disabled={isLoadingBudgets}
             >
-              {isLoadingBudgets ? (
-                <MenuItem value="">Loading budgets...</MenuItem>
-              ) : (
-                profiles.length > 0 ? (
-                  profiles.map((profile: string) => (
-                    <MenuItem key={profile} value={profile}>{profile}</MenuItem>
-                  ))
-                ) : (
-                  <MenuItem value="">No budgets available</MenuItem>
-                )
-              )}
+              {renderMenuItems()}
             </Select>
             {budgetError && <FormHelperText>{budgetError}</FormHelperText>}
             {budgetRequired && (
@@ -333,12 +346,7 @@ curl --location '${baseUrl}/chat/completions' \\
             </pre>
             <Box position="absolute" right={8} top={8}>
               <CopyTextButton 
-                text={
-                  tabIndex === 0 ? codeSamples.pythonOpenAI :
-                  tabIndex === 1 ? codeSamples.pythonLangchain :
-                  tabIndex === 2 ? codeSamples.jsLangchain :
-                  codeSamples.curl
-                }
+                text={getCodeSampleForTab(tabIndex)}
               />
             </Box>
             {!generatedKey && (

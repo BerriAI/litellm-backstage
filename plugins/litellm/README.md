@@ -10,13 +10,11 @@ This plugin integrates LiteLLM key management functionality into your Backstage 
 - Instant code samples for different programming languages
 - Copy-to-clipboard functionality for keys and code samples
 
-## From your Backstage root directory
-yarn add @backstage/plugin-litellm
-
 ## Installation
-From your Backstage root directory
+
+From your Backstage root directory:
 ```bash
-yarn add --cwd packages/app @backstage/plugin-litellm
+yarn add --cwd packages/app @internal/plugin-litellm
 ```
 
 ## Configuration
@@ -37,7 +35,8 @@ app:
 Add the LiteLLM page to your Backstage application by modifying your `packages/app/src/App.tsx` file:
 
 ```tsx
-import { LitellmPage } from '@backstage/plugin-litellm';
+import { LitellmPage } from '@internal/plugin-litellm';
+
 // Inside your App component's route definitions:
 <Route path="/litellm" element={<LitellmPage />} />
 ```
@@ -47,14 +46,11 @@ import { LitellmPage } from '@backstage/plugin-litellm';
 Modify your `packages/app/src/components/Root/Root.tsx` to add a navigation item:
 
 ```tsx
-import { SidebarPage, SidebarItem } from '@backstage/core-components';
-
-<SidebarPage>
 import ExtensionIcon from '@material-ui/icons/Extension';
+
 // Inside your sidebar items:
 <SidebarItem icon={ExtensionIcon} to="litellm" text="LiteLLM Keys" />
 ```
-
 
 ## Usage
 
@@ -69,7 +65,7 @@ Once installed and configured, users can:
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Additional Resources
 
