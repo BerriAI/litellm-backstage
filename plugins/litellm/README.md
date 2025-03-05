@@ -51,10 +51,10 @@ import { LitellmPage } from '@cakecrusher/plugin-litellm';
 Modify your `packages/app/src/components/Root/Root.tsx` to add a navigation item:
 
 ```tsx
-import ExtensionIcon from '@material-ui/icons/Extension';
+import SmartToyIcon from '@material-ui/icons/Train';
 
 // Inside your sidebar items:
-<SidebarItem icon={ExtensionIcon} to="litellm" text="LiteLLM Keys" />
+<SidebarItem icon={SmartToyIcon} to="litellm" text="LiteLLM Keys" />
 ```
 
 ## Usage
