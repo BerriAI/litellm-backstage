@@ -2,6 +2,9 @@
 
 This plugin integrates LiteLLM key management functionality into your Backstage instance, allowing users to generate and manage API keys for LiteLLM services directly from the Backstage UI.
 
+![image](https://github.com/user-attachments/assets/bcd3daed-029c-42c0-90d6-43996d7bf127)
+
+
 ## Features
 
 - Generate LiteLLM API keys with custom names
