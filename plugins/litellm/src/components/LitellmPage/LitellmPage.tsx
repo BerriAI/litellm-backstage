@@ -1,5 +1,5 @@
 // plugins/litellm/src/components/LitellmPage.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   TextField,
@@ -9,50 +9,18 @@ import {
   Tabs,
   Tab,
   Box,
-  Divider,
-  Paper,
-  Grid,
+  FormControl,
+  FormHelperText,
+  InputLabel,
 } from '@material-ui/core';
 import { useApi, configApiRef } from '@backstage/core-plugin-api';
 import { CopyTextButton } from '@backstage/core-components';
 import { InfoCard } from '@backstage/core-components';
-// Define an interface for the decoded JWT payload
-interface JwtPayload {
-  key: string;
-  [prop: string]: any;
-}
-
-// Helper function to read a cookie by name
-function getCookieValue(name: string): string | null {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()!.split(';').shift() || null;
-  return null;
-}
-
-// Helper function to decode a JWT token (without signature verification)
-function decodeJwt(token: string): any {
-  const parts = token.split('.');
-  if (parts.length !== 3) {
-    throw new Error('Invalid JWT token');
-  }
-  const payload = parts[1];
-  const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-  const jsonPayload = decodeURIComponent(
-    atob(base64)
-      .split('')
-      .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-      .join('')
-  );
-  return JSON.parse(jsonPayload);
-}
-
-// We only need options and final steps now
-type Step = 'options' | 'final';
 
 type LitellmConfig = {
   baseUrl: string;
   apiKey: string;
+  budgetRequired: boolean;
 }
 
 export const LitellmPage = () => { 
@@ -63,34 +31,92 @@ export const LitellmPage = () => {
   }
   const baseUrl = litellmConfig.baseUrl;
   const organizationApiKey = litellmConfig.apiKey;
+  const budgetRequired: boolean = litellmConfig.budgetRequired;
 
   // Component state
   const [keyAlias, setKeyAlias] = useState<string>('');
-  const [profile, setProfile] = useState<'none' | 'dev' | 'prod'>('none');
+  const [profiles, setProfiles] = useState<string[]>(['NONE']);
+  const [selectedProfile, setSelectedProfile] = useState<string>('NONE');
   const [generatedKey, setGeneratedKey] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [budgetError, setBudgetError] = useState<string>('');
   const [tabIndex, setTabIndex] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isLoadingBudgets, setIsLoadingBudgets] = useState<boolean>(true);
+
+  const retrieveBudgets = async (): Promise<string[]> => {
+    try {
+      const response = await fetch(`${baseUrl}/budget/list`, {
+        headers: {
+          'Authorization': `Bearer ${organizationApiKey}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch budgets: ${response.status} ${response.statusText}`);
+      }
+      
+      const budgets = await response.json();
+      let budgetsList = budgets.map((budget: any) => budget.budget_id);
+      
+      // Only add NONE option if budget is not required
+      if (!budgetRequired) {
+        budgetsList.push('NONE');
+      }
+      
+      return budgetsList;
+    } catch (error) {
+      console.error('Error fetching budgets:', error);
+      return budgetRequired ? [] : ['NONE'];
+    }
+  }
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      setIsLoadingBudgets(true);
+      try {
+        const profiles = await retrieveBudgets();
+        setProfiles(profiles);
+        
+        // If budget is required and there are available budgets, select the first one by default
+        if (budgetRequired && profiles.length > 0 && profiles[0] !== 'NONE') {
+          setSelectedProfile(profiles[0]);
+        }
+      } catch (error) {
+        console.error('Error loading budgets:', error);
+      } finally {
+        setIsLoadingBudgets(false);
+      }
+    };
+    fetchProfiles();
+  }, []);
 
   // Submit key options and generate API key with additional fields.
   const handleSubmitKeyOptions = async () => {
     setErrorMessage('');
+    setBudgetError('');
+    
+    // Validate key alias
     if (!keyAlias) {
       setErrorMessage('Please provide a key name.');
       return;
     }
 
+    // Validate budget selection if required
+    if (budgetRequired && (selectedProfile === 'NONE' || !selectedProfile)) {
+      setBudgetError('Budget selection is required.');
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      // Only add tags if profile is not 'none'
       const requestBody: any = {
-        models: ['gpt-3.5-turbo'],
         key_alias: keyAlias,
       };
       
-      // Only add tags for premium profiles
-      if (profile !== 'none') {
-        requestBody.tags = [profile];
+      // Only add budget_id if profile is not 'NONE'
+      if (selectedProfile !== 'NONE') {
+        requestBody.budget_id = selectedProfile;
       }
       
       // Call /key/generate with additional fields
@@ -208,23 +234,54 @@ curl --location '${baseUrl}/chat/completions' \\
             onChange={e => setKeyAlias(e.target.value)} 
             margin="normal"
             helperText="Enter a name for your key"
+            error={!!errorMessage && !keyAlias}
           />
-          <Typography variant="subtitle1" style={{ marginTop: 16 }}>Key Profile:</Typography>
-          <Select
-            value={profile}
-            onChange={(e) => setProfile(e.target.value as 'dev' | 'prod' | 'none')}
-            fullWidth
+          
+          <FormControl 
+            fullWidth 
+            variant="outlined" 
+            margin="normal" 
+            error={!!budgetError}
+            style={{ marginTop: 16 }}
           >
-            <MenuItem value="none">None</MenuItem>
-            <MenuItem value="dev">Dev (Premium)</MenuItem>
-            <MenuItem value="prod">Prod (Premium)</MenuItem>
-          </Select>
+            <InputLabel>
+              Profile (budget) {budgetRequired ? '(Required)' : '(Optional)'}
+            </InputLabel>
+            <Select
+              value={selectedProfile}
+              onChange={(e) => {
+                setSelectedProfile(e.target.value as string);
+                setBudgetError('');
+              }}
+              label={`Profile (budget) ${budgetRequired ? '(Required)' : '(Optional)'}`}
+              disabled={isLoadingBudgets}
+            >
+              {isLoadingBudgets ? (
+                <MenuItem value="">Loading budgets...</MenuItem>
+              ) : (
+                profiles.length > 0 ? (
+                  profiles.map((profile: string) => (
+                    <MenuItem key={profile} value={profile}>{profile}</MenuItem>
+                  ))
+                ) : (
+                  <MenuItem value="">No budgets available</MenuItem>
+                )
+              )}
+            </Select>
+            {budgetError && <FormHelperText>{budgetError}</FormHelperText>}
+            {budgetRequired && (
+              <FormHelperText>
+                Profile (budget) selection is required for key generation
+              </FormHelperText>
+            )}
+          </FormControl>
+          
           <Button 
             variant="contained" 
             color="primary" 
             onClick={handleSubmitKeyOptions} 
             style={{ marginTop: 24 }}
-            disabled={isGenerating}
+            disabled={isGenerating || isLoadingBudgets || (profiles.length === 0)}
           >
             {isGenerating ? 'Generating...' : 'Generate API Key'}
           </Button>

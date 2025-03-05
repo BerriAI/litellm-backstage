@@ -14,6 +14,7 @@ export interface Config {
     litellm: {
       apiKey: string;
       baseUrl: string;
+      budgetRequired: boolean;
     };
   };
 }
