@@ -43,7 +43,8 @@ function decodeJwt(token: string): any {
   return JSON.parse(jsonPayload);
 }
 
-type Step = 'login' | 'options' | 'final';
+// We only need options and final steps now
+type Step = 'options' | 'final';
 
 type LitellmConfig = {
   baseUrl: string;
@@ -57,76 +58,15 @@ export const LitellmPage = () => {
     throw new Error('LiteLLM config is not set');
   }
   const baseUrl = litellmConfig.baseUrl;
+  const organizationApiKey = litellmConfig.apiKey;
 
-  // Component state
-  const [step, setStep] = useState<Step>('login');
-  const [username, setUsername] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [loggedIn, setLoggedIn] = useState<boolean>(false);
+  // Component state - remove login-related state
+  const [step, setStep] = useState<Step>('options');
   const [keyAlias, setKeyAlias] = useState<string>('');
   const [profile, setProfile] = useState<'none' | 'dev' | 'prod'>('none');
   const [generatedKey, setGeneratedKey] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [tabIndex, setTabIndex] = useState<number>(0);
-
-  // Login: Sends credentials to /login and expects the token cookie to be set.
-  const handleLogin = async () => {
-    setErrorMessage('');
-    if (!username || !password) {
-      setErrorMessage('Please enter both username and password.');
-      return;
-    }
-    
-    // Validate baseUrl format
-    if (!baseUrl || !baseUrl.startsWith('http')) {
-      setErrorMessage('Please enter a valid URL (starting with http:// or https://).');
-      return;
-    }
-    
-    try {
-      const response = await fetch(`${baseUrl}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({ username, password }).toString(),
-        redirect: 'manual',
-        credentials: 'include',
-      });
-      // Check for opaque redirect or success.
-      if ((response.type === "opaqueredirect" && response.status === 0) || response.ok) {
-        setLoggedIn(true);
-        // Transition to options step.
-        setStep('options');
-      } else {
-        let errorMessage = `Login failed: ${response.status} ${response.statusText}`
-
-        if (response.statusText?.includes('NetworkError')) {
-          errorMessage += ' - Unable to connect - Please check if the URL is correct and the server is running';
-        } else if (response.statusText?.includes('Unauthorized')) {
-          errorMessage += ' - Invalid username or password';
-        }
-        setErrorMessage(errorMessage);
-      }
-    } catch (error: any) {
-        let errorMessage = `Login failed: ${error.message}`
-        
-        if (error.message?.includes('NetworkError')) {
-          errorMessage += ' - Unable to connect - Please check if the URL is correct and the server is running';
-        } else if (error.message?.includes('Unauthorized')) {
-          errorMessage += ' - Invalid username or password';
-        }
-        console.error(error);
-        setErrorMessage(errorMessage);
-    }
-  };
-
-  const handleLogout = () => {
-    setLoggedIn(false);
-    setGeneratedKey('');
-    setErrorMessage('');
-    setStep('login');
-  };
 
   // Submit key options and generate API key with additional fields.
   const handleSubmitKeyOptions = async () => {
@@ -135,24 +75,7 @@ export const LitellmPage = () => {
       setErrorMessage('Please provide a key name.');
       return;
     }
-    // Retrieve the JWT token from cookie, decode it, and extract the key.
-    const storedToken = getCookieValue('token');
-    if (!storedToken) {
-      setErrorMessage("No token found in cookie. Make sure the cookie is accessible.");
-      return;
-    }
-    let decoded: JwtPayload;
-    try {
-      decoded = decodeJwt(storedToken);
-    } catch (error: any) {
-      setErrorMessage("Failed to decode JWT token.");
-      return;
-    }
-    const keyForAuth = decoded.key;
-    if (!keyForAuth) {
-      setErrorMessage("No key found in token payload.");
-      return;
-    }
+
     try {
       // Only add tags if profile is not 'none'
       const requestBody: any = {
@@ -169,7 +92,7 @@ export const LitellmPage = () => {
       const response = await fetch(`${baseUrl}/key/generate`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${keyForAuth}`,
+          'Authorization': `Bearer ${organizationApiKey}`,
           'Content-Type': 'application/json',
         },
         credentials: 'include',
@@ -190,7 +113,6 @@ export const LitellmPage = () => {
       const data = await response.json();
       if (data.key) {
         setGeneratedKey(data.key);
-        // Transition to final step.
         setStep('final');
       } else {
         setErrorMessage('No key returned from API.');
@@ -199,7 +121,6 @@ export const LitellmPage = () => {
       setErrorMessage(`Error generating key: ${error.message}`);
     }
   };
-
 
   // Code samples with the generated API key and baseUrl substituted in.
   const codeSamples = {
@@ -269,35 +190,7 @@ curl --location '${baseUrl}/chat/completions' \\
   return (
     <div style={{ maxWidth: 600, padding: 16 }}>
       <Typography variant="h5">LiteLLM Key Manager</Typography>
-      {step === 'login' && (
-        <div style={{ marginTop: 16 }}>
-          <TextField 
-            label="Username" 
-            variant="outlined" 
-            fullWidth 
-            value={username} 
-            onChange={e => setUsername(e.target.value)} 
-            margin="normal"
-          />
-          <TextField 
-            label="Password" 
-            variant="outlined" 
-            fullWidth 
-            value={password} 
-            onChange={e => setPassword(e.target.value)} 
-            type="password" 
-            autoComplete="off"
-            margin="normal"
-          />
-          <Button variant="contained" color="primary" onClick={handleLogin}>
-            Login
-          </Button>
-          {errorMessage && (
-            <div style={{ marginTop: 16, color: 'red' }}>{errorMessage}</div>
-          )}
-        </div>
-      )}
-  {step === 'options' && (
+      {step === 'options' && (
         <div style={{ marginTop: 16 }}>
           <Typography variant="h6">Key Options</Typography>
           <TextField 
@@ -330,15 +223,6 @@ curl --location '${baseUrl}/chat/completions' \\
           {errorMessage && (
             <div style={{ marginTop: 16, marginBottom: 24, color: 'red' }}>{errorMessage}</div>
           )}
-          <br />
-          <Button 
-            variant="outlined" 
-            color="secondary" 
-            onClick={handleLogout} 
-            style={{ marginTop: 20 }}
-          >
-            Logout
-          </Button>
         </div>
       )}
       {step === 'final' && (
@@ -367,18 +251,10 @@ curl --location '${baseUrl}/chat/completions' \\
           <Box mt={2}>
             <Box position="relative">
               <pre style={{ outline: '1px solid #aaa', padding: 16, overflow: 'auto' }}>
-                {tabIndex === 0 && (
-                    <>{codeSamples.pythonOpenAI}</>
-                )}
-                {tabIndex === 1 && (
-                    <>{codeSamples.pythonLangchain}</>
-                )}
-                {tabIndex === 2 && (
-                    <>{codeSamples.jsLangchain}</>
-                )}
-                {tabIndex === 3 && (
-                    <>{codeSamples.curl}</>
-                )}
+                {tabIndex === 0 && codeSamples.pythonOpenAI}
+                {tabIndex === 1 && codeSamples.pythonLangchain}
+                {tabIndex === 2 && codeSamples.jsLangchain}
+                {tabIndex === 3 && codeSamples.curl}
               </pre>
               <Box position="absolute" right={8} top={8}>
                 <CopyTextButton 
@@ -392,15 +268,13 @@ curl --location '${baseUrl}/chat/completions' \\
               </Box>
             </Box>
           </Box>
-          <div style={{ marginTop: 16 }}>
-            <Button variant="outlined" onClick={() => setStep('options')} style={{ marginRight: 8 }}>
-              Back
-            </Button>
-            <br />
-            <Button variant="outlined" color="secondary" onClick={handleLogout} style={{ marginTop: 20 }}>
-              Logout
-            </Button>
-          </div>
+          <Button 
+            variant="outlined" 
+            onClick={() => setStep('options')} 
+            style={{ marginTop: 16 }}
+          >
+            Generate Another Key
+          </Button>
         </div>
       )}
     </div>
