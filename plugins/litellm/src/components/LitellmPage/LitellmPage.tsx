@@ -225,7 +225,7 @@ curl --location '${baseUrl}/chat/completions' \\
 
       {/* Key generation section */}
       <InfoCard title="Generate API Key">
-        <div style={{ marginTop: 16, padding: 16 }}>
+        <div style={{ paddingRight: 16, paddingLeft: 16 }}>
           <TextField 
             label="Key Name" 
             variant="outlined" 
