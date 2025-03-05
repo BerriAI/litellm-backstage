@@ -45,8 +45,12 @@ function decodeJwt(token: string): any {
 
 type Step = 'login' | 'options' | 'final';
 
-export const LitellmPage = () => {
+export const LitellmPage = () => { 
   const config = useApi(configApiRef);
+  console.log('app.title', config.getOptionalString('app.title'));
+  console.log('app.customSchedule', config.getOptionalString('app.customSchedule'));
+  console.log('litellm config', config.keys());
+  console.log('litellm config app', config.get('app'));
   // Initialize with a default URL but allow user to change it
   const [baseUrl, setBaseUrl] = useState<string>("http://localhost:4000");
 
