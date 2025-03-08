@@ -1,5 +1,5 @@
 {
-  "name": "@cakecrusher/plugin-litellm",
+  "name": "@litellm/plugin-litellm",
   "description": "Integrates LiteLLM's key management system into Backstage, enabling teams to generate, track, and manage API keys for LLM services with budget controls and usage monitoring in a centralized interface.",
   "version": "0.1.4",
   "license": "MIT",
