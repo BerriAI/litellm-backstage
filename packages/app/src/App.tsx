@@ -37,6 +37,7 @@ import { CatalogGraphPage } from '@backstage/plugin-catalog-graph';
 import { RequirePermission } from '@backstage/plugin-permission-react';
 import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
 import { LitellmPage } from '@internal/plugin-litellm';
+import { microsoftAuthApiRef } from '@backstage/core-plugin-api';
 
 const app = createApp({
   apis,
@@ -58,7 +59,12 @@ const app = createApp({
     });
   },
   components: {
-    SignInPage: props => <SignInPage {...props} auto providers={['guest']} />,
+    SignInPage: props => <SignInPage {...props} auto provider={{
+      id: 'microsoft-auth-provider',
+      title: 'Microsoft',
+      message: 'Sign in using Microsoft',
+      apiRef: microsoftAuthApiRef,
+    }} />,
   },
 });
 

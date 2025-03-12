@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: microsoft-user
+  annotations:
+    graph.microsoft.com/user-id: 3b4852dd-41cf-4c5e-abf7-118273877857
+spec:
+  profile:
+    displayName: Sebastian Sosa
+    email: 1sebastian1sosa1@gmail.com
+  memberOf: []

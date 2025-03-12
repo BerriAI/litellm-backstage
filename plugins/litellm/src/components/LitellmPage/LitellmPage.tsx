@@ -126,7 +126,7 @@ export const LitellmPage = () => {
           'Authorization': `Bearer ${organizationApiKey}`,
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        // credentials: 'include',
         body: JSON.stringify(requestBody),
       });
       
