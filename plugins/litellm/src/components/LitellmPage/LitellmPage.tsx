@@ -13,7 +13,7 @@ import {
   FormHelperText,
   InputLabel,
 } from '@material-ui/core';
-import { useApi, configApiRef } from '@backstage/core-plugin-api';
+import { useApi, configApiRef, identityApiRef } from '@backstage/core-plugin-api';
 import { CopyTextButton } from '@backstage/core-components';
 import { InfoCard } from '@backstage/core-components';
 
@@ -43,6 +43,21 @@ export const LitellmPage = () => {
   const [tabIndex, setTabIndex] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isLoadingBudgets, setIsLoadingBudgets] = useState<boolean>(true);
+  const identityApi = useApi(identityApiRef);
+  
+  const fetchUserEmail = async () => {
+    try {
+      const identity = await identityApi.getProfileInfo();
+      if (!identity || !identity.email) {
+        throw new Error('User email not found');
+      }
+      return identity.email;
+    } catch (error) {
+      console.error('Error fetching or decoding identity token:', error);
+      return 'FALLBACK_USER_EMAIL';
+    }
+  };
+
 
   const retrieveBudgets = async (): Promise<string[]> => {
     try {
