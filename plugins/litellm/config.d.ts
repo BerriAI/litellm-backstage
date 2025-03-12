@@ -12,9 +12,11 @@ export interface Config {
      * @deepVisibility frontend
      */
     litellm: {
-      apiKey: string;
       baseUrl: string;
-      budgetRequired: boolean;
+      adminKey: string;
+      teamId: string;
+      budgetId: string;
+      maxBudgetPerUser: number;
     };
   };
 }

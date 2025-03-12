@@ -19,14 +19,17 @@ import { InfoCard } from '@backstage/core-components';
 
 type LitellmConfig = {
   baseUrl: string;
-  apiKey: string;
-  budgetRequired: boolean;
+  adminKey: string;
+  teamId: string;
+  budgetId: string;
+  maxBudgetPerUser: number;
 }
 
 export const LitellmPage = () => { 
   const config = useApi(configApiRef);
   const litellmConfig: LitellmConfig = config.get('app.litellm');
-  if (!litellmConfig || !litellmConfig.baseUrl || !litellmConfig.apiKey) {
+  console.log('litellmConfig', litellmConfig);
+  if (!litellmConfig || !litellmConfig.baseUrl || !litellmConfig.adminKey || !litellmConfig.teamId || !litellmConfig.budgetId || !litellmConfig.maxBudgetPerUser) {
     throw new Error('LiteLLM config is not set');
   }
   const baseUrl = litellmConfig.baseUrl;
