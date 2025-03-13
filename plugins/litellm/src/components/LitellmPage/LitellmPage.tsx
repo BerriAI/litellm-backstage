@@ -47,13 +47,15 @@ export const LitellmPage = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [userId, setUserId] = useState<string>('');
+  const [verifiedBudgetId, setVerifiedBudgetId] = useState<string>('');
+  const [verifiedTeamId, setVerifiedTeamId] = useState<string>('');
   const identityApi = useApi(identityApiRef);
   
   // Parse the email from Azure AD format to get a clean user ID
   const parseAzureAdEmail = (email: string): string => {
     if (email.includes('#EXT#')) {
       const emailPart = email.split('#EXT#')[0];
-      return emailPart
+      return emailPart;
     }
     return email;
   };
@@ -72,6 +74,50 @@ export const LitellmPage = () => {
     }
   };
 
+  // Verify that the team exists
+  const verifyTeam = async (teamId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${baseUrl}/team/${teamId}/callback`, {
+        headers: {
+          'accept': 'application/json',
+          'x-goog-api-key': adminKey,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to verify team: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.status === "success";
+    } catch (error) {
+      console.error('Error verifying team:', error);
+      return false;
+    }
+  };
+
+  // Verify that the budget exists
+  const verifyBudget = async (budgetId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${baseUrl}/budget/list`, {
+        headers: {
+          'accept': 'application/json',
+          'x-goog-api-key': adminKey,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to verify budget: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.some((budget: any) => budget.budget_id === budgetId);
+    } catch (error) {
+      console.error('Error verifying budget:', error);
+      return false;
+    }
+  };
+
   // Check if user exists in LiteLLM
   const checkUserExists = async (userEmail: string): Promise<boolean> => {
     try {
@@ -87,7 +133,6 @@ export const LitellmPage = () => {
       }
       
       const data = await response.json();
-      console.log('User check data: ', data);
       return data.users && data.users.length > 0;
     } catch (error) {
       console.error('Error checking user existence:', error);
@@ -108,7 +153,7 @@ export const LitellmPage = () => {
         body: JSON.stringify({
           max_budget: maxBudgetPerUser,
           user_id: userEmail,
-          team_id: teamId
+          team_id: verifiedTeamId
         }),
       });
       
@@ -117,7 +162,7 @@ export const LitellmPage = () => {
       }
       
       const data = await response.json();
-      console.log('Created user data: ', data);
+      console.log('Created user data:', data);
       return true;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -130,6 +175,20 @@ export const LitellmPage = () => {
     const initializeUser = async () => {
       setIsInitializing(true);
       try {
+        // First verify team and budget exist
+        const teamExists = await verifyTeam(teamId);
+        if (!teamExists) {
+          throw new Error(`Team with ID ${teamId} does not exist`);
+        }
+        setVerifiedTeamId(teamId);
+        
+        const budgetExists = await verifyBudget(budgetId);
+        if (!budgetExists) {
+          throw new Error(`Budget with ID ${budgetId} does not exist`);
+        }
+        setVerifiedBudgetId(budgetId);
+        
+        // Now proceed with user initialization
         const userEmail = await fetchUserEmail();
         setUserId(userEmail);
         
@@ -138,12 +197,12 @@ export const LitellmPage = () => {
         if (!exists) {
           const created = await createUser(userEmail);
           if (!created) {
-            setErrorMessage('Failed to create user in LiteLLM');
+            throw new Error('Failed to create user in LiteLLM');
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error initializing user:', error);
-        setErrorMessage('Failed to initialize user');
+        setErrorMessage(error.message || 'Failed to initialize user');
       } finally {
         setIsInitializing(false);
       }
@@ -152,23 +211,34 @@ export const LitellmPage = () => {
     initializeUser();
   }, [identityApi]);
 
-  // Submit key options and generate API key with additional fields.
-  const handleSubmitKeyOptions = async () => {
-    setErrorMessage('');
+  // Update the onChange handler for key alias to clear errors
+  const handleKeyAliasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setKeyAlias(value);
     
-    // Validate key alias
+    // Clear validation error when user types in the field
+    if (value && errorMessage && errorMessage.includes('Failed to generate key: ')) {
+      setErrorMessage('');
+    }
+  };
+
+  // Update the key generation function
+  const handleSubmitKeyOptions = async () => {
+    // Validate input
     if (!keyAlias) {
-      setErrorMessage('Please provide a key name.');
+      setErrorMessage('Failed to generate key: lease enter a key alias');
       return;
     }
-
+    
     setIsGenerating(true);
+    setErrorMessage('');
+    
     try {
       const requestBody = {
         key_alias: keyAlias,
         user_id: userId,
-        team_id: teamId,
-        budget_id: budgetId
+        team_id: verifiedTeamId,
+        budget_id: verifiedBudgetId
       };
       
       // Call /key/generate with user details
@@ -195,12 +265,14 @@ export const LitellmPage = () => {
       
       const data = await response.json();
       if (data.key) {
+        console.log('Generated key:', data);
         setGeneratedKey(data.key);
       } else {
         setErrorMessage('No key returned from API.');
       }
     } catch (error: any) {
-      setErrorMessage(`Error generating key: ${error.message}`);
+      console.error('Error generating key:', error);
+      setErrorMessage(`Failed to generate key: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsGenerating(false);
     }
@@ -294,6 +366,14 @@ curl --location '${baseUrl}/chat/completions' \\
         </Box>
       ) : (
         <>
+          {errorMessage && (
+            <Box mb={3} p={2} bgcolor="rgba(255, 0, 0, 0.1)" borderRadius={1}>
+              <Typography variant="body1" color="error">
+                {errorMessage}
+              </Typography>
+            </Box>
+          )}
+
           {/* Key generation section */}
           <InfoCard title="Generate API Key">
             <div style={{ paddingRight: 16, paddingLeft: 16 }}>
@@ -302,10 +382,10 @@ curl --location '${baseUrl}/chat/completions' \\
                 variant="outlined" 
                 fullWidth 
                 value={keyAlias} 
-                onChange={e => setKeyAlias(e.target.value)} 
+                onChange={handleKeyAliasChange}
                 margin="normal"
-                helperText="Enter a name for your key"
-                error={!!errorMessage && !keyAlias}
+                helperText={!keyAlias && errorMessage ? "Key name is required" : "Enter a name for your key"}
+                error={!keyAlias && !!errorMessage}
               />
               
               <Button 
@@ -313,13 +393,10 @@ curl --location '${baseUrl}/chat/completions' \\
                 color="primary" 
                 onClick={handleSubmitKeyOptions} 
                 style={{ marginTop: 24 }}
-                disabled={isGenerating}
+                disabled={isGenerating || (!!errorMessage && !errorMessage.includes('key alias'))}
               >
                 {isGenerating ? 'Generating...' : 'Generate API Key'}
               </Button>
-              {errorMessage && (
-                <div style={{ marginTop: 16, marginBottom: 8, color: 'red' }}>{errorMessage}</div>
-              )}
             </div>
           </InfoCard>
           <div style={{ marginBottom: 14 }} />
