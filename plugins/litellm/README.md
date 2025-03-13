@@ -6,14 +6,17 @@ https://youtu.be/V9RXk5SJcCo
 
 ![image](https://github.com/user-attachments/assets/bcd3daed-029c-42c0-90d6-43996d7bf127)
 
+## Requirements
+
+- LiteLLM instance
+- Backstage instance with microsoft auth provider configured.
 
 ## Features
 
 - Generate LiteLLM API keys with custom names
-- Support for budget/profile selection for generated keys
-- Configurable budget requirement setting
+- Team and budget verification
 - Instant code samples for different programming languages
-- Copy-to-clipboard functionality for keys and code samples
+- Automatic user creation in LiteLLM (using `Azure Active Directory` email format as the `user_id`)
 
 ## Installation
 
@@ -28,9 +31,11 @@ Add the following to your `app-config.yaml`:
 ```yaml
 app:
   litellm:
-    apiKey: 'your-organization-api-key' # Your LiteLLM admin/organization API key
     baseUrl: 'https://your-litellm-instance.com' # URL to your LiteLLM instance
-    budgetRequired: false # Set to true if budget selection should be mandatory
+    adminKey: 'your-organization-api-key' # Your LiteLLM admin/organization API key
+    teamId: 'your-team-id' # Your LiteLLM team ID
+    budgetId: 'your-budget-id' # Your LiteLLM budget ID
+    maxBudgetPerUser: 5 # Maximum budget per user
 ```
 
 ## Adding to your Backstage application
@@ -63,10 +68,8 @@ Once installed and configured, users can:
 
 1. Navigate to the LiteLLM page
 2. Enter a name for their API key
-3. Select a budget/profile (if applicable)
-4. Generate a key
-5. Copy the generated key
-6. Use provided code samples to integrate with their applications
+3. Generate a key
+4. Use provided code samples to integrate with their applications
 
 ## License
 
