@@ -29,7 +29,6 @@ type LitellmConfig = {
 export const LitellmPage = () => { 
   const config = useApi(configApiRef);
   const litellmConfig: LitellmConfig = config.get('app.litellm');
-  console.log('litellmConfig', litellmConfig);
   if (!litellmConfig || !litellmConfig.baseUrl || !litellmConfig.adminKey || !litellmConfig.teamId || !litellmConfig.budgetId || !litellmConfig.maxBudgetPerUser) {
     throw new Error('LiteLLM config is not set');
   }
@@ -162,7 +161,6 @@ export const LitellmPage = () => {
       }
       
       const data = await response.json();
-      console.log('Created user data:', data);
       return true;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -265,7 +263,6 @@ export const LitellmPage = () => {
       
       const data = await response.json();
       if (data.key) {
-        console.log('Generated key:', data);
         setGeneratedKey(data.key);
       } else {
         setErrorMessage('No key returned from API.');
