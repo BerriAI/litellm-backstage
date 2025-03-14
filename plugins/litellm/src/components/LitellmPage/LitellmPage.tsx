@@ -236,7 +236,8 @@ export const LitellmPage = () => {
         key_alias: keyAlias,
         user_id: userId,
         team_id: verifiedTeamId,
-        budget_id: verifiedBudgetId
+        budget_id: verifiedBudgetId,
+        duration: "365d"
       };
       
       // Call /key/generate with user details
