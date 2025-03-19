@@ -8,9 +8,10 @@ You are currently at the root of the repository, this is the backstage app showi
 
 This plugin integrates LiteLLM key management functionality into your Backstage instance, allowing users to generate and manage API keys for LiteLLM services directly from the Backstage UI.
 
-https://youtu.be/V9RXk5SJcCo
+https://youtu.be/q6urt9L7jnU
 
-![image](https://github.com/user-attachments/assets/bcd3daed-029c-42c0-90d6-43996d7bf127)
+![image](https://github.com/user-attachments/assets/c200d1d9-b706-432d-9a6c-612312df91b0)
+
 
 ## Requirements
 
