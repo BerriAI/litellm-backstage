@@ -59,12 +59,18 @@ const app = createApp({
     });
   },
   components: {
-    SignInPage: props => <SignInPage {...props} auto provider={{
-      id: 'microsoft-auth-provider',
-      title: 'Microsoft',
-      message: 'Sign in using Microsoft',
-      apiRef: microsoftAuthApiRef,
-    }} />,
+    SignInPage: props => (
+      <SignInPage
+        {...props}
+        auto
+        provider={{
+          id: 'microsoft-auth-provider',
+          title: 'Microsoft',
+          message: 'Sign in using Microsoft',
+          apiRef: microsoftAuthApiRef,
+        }}
+      />
+    ),
   },
 });
 

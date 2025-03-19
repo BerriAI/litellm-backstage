@@ -1,6 +1,6 @@
 # Backstage application using `@litellm/plugin-litellm`
 
-You are currently at the root of the repository, this is the backstage app showing the plugin in action. 
+You are currently at the root of the repository, this is the backstage app showing the plugin in action.
 
 # See plugin code in the [`plugins/litellm`](plugins/litellm) directory
 
@@ -27,6 +27,7 @@ https://youtu.be/V9RXk5SJcCo
 ## Installation
 
 From your Backstage root directory:
+
 ```bash
 yarn add --cwd packages/app @litellm/plugin-litellm
 ```
@@ -34,6 +35,7 @@ yarn add --cwd packages/app @litellm/plugin-litellm
 ## Configuration
 
 Add the following to your `app-config.yaml`:
+
 ```yaml
 app:
   litellm:
@@ -54,7 +56,7 @@ Add the LiteLLM page to your Backstage application by modifying your `packages/a
 import { LitellmPage } from '@litellm/plugin-litellm';
 
 // Inside your App component's route definitions:
-<Route path="/litellm" element={<LitellmPage />} />
+<Route path="/litellm" element={<LitellmPage />} />;
 ```
 
 ### Add a navigation item (optional)
@@ -65,7 +67,7 @@ Modify your `packages/app/src/components/Root/Root.tsx` to add a navigation item
 import SmartToyIcon from '@material-ui/icons/Train';
 
 // Inside your sidebar items:
-<SidebarItem icon={SmartToyIcon} to="litellm" text="LiteLLM Keys" />
+<SidebarItem icon={SmartToyIcon} to="litellm" text="LiteLLM Keys" />;
 ```
 
 ## Usage
